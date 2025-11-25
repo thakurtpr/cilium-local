@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+- ../../base
+
+namespace: cilium-test
+
+commonLabels:
+  environment: dev
+
+configMapGenerator:
+- name: test-environment-config
+  namespace: cilium-test
+  behavior: merge
+  literals:
+  - ENVIRONMENT=dev
+  - WASM_FILTER_URL=https://res.cloudinary.com/dohipaqvk/raw/upload/v1764100796/oxy_money_auth_filter_yos7rp.wasm
+
+patches:
+- target:
+    kind: Deployment
+    name: test-backend
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 3

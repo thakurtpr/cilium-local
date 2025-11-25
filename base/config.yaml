@@ -1,0 +1,25 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-environment-config
+  namespace: cilium-test
+data:
+  # Environment identifier
+  ENVIRONMENT: "local"
+
+  # WASM filter configuration
+  WASM_FILTER_URL: "https://res.cloudinary.com/dohipaqvk/raw/upload/v1764100796/oxy_money_auth_filter_yos7rp.wasm"
+
+  # Backend service configuration
+  BACKEND_SERVICE_NAME: "test-backend"
+  BACKEND_SERVICE_PORT: "8080"
+  BACKEND_NAMESPACE: "cilium-test"
+
+  # HTTP routes configuration
+  GET_ROUTE_PATH: "/health"
+  POST_ROUTE_PATH: "/echo"
+
+  # Envoy configuration
+  ENVOY_LISTENER_PORT: "10000"
+  CLUSTER_NAME: "test-backend-cluster"

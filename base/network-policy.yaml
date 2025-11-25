@@ -1,0 +1,66 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: test-backend-l7-policy
+  namespace: cilium-test
+spec:
+  # Apply this policy to the backend pods
+  endpointSelector:
+    matchLabels:
+      app: test-backend
+
+  # Ingress rules - traffic coming TO the backend
+  ingress:
+  - fromEndpoints:
+    # Allow traffic from any endpoint in the cluster
+    - {}
+
+    # L7 HTTP rules - this triggers Envoy proxy with WASM filter
+    toPorts:
+    - ports:
+      - port: "8080"
+        protocol: TCP
+
+      # L7 HTTP policy rules
+      rules:
+        http:
+        # Allow GET requests to /health
+        - method: "GET"
+          path: "/health"
+
+        # Allow POST requests to /echo
+        - method: "POST"
+          path: "/echo"
+
+        # Allow all other HTTP requests (for testing)
+        - method: "GET"
+          path: "/.*"
+
+        - method: "POST"
+          path: "/.*"
+
+        - method: "PUT"
+          path: "/.*"
+
+        - method: "DELETE"
+          path: "/.*"
+
+  # Egress rules - traffic going FROM the backend
+  egress:
+  # Allow DNS
+  - toEndpoints:
+    - matchLabels:
+        io.kubernetes.pod.namespace: kube-system
+        k8s-app: kube-dns
+    toPorts:
+    - ports:
+      - port: "53"
+        protocol: UDP
+      rules:
+        dns:
+        - matchPattern: "*"
+
+  # Allow all other egress (backend may need to make external calls)
+  - toEndpoints:
+    - {}

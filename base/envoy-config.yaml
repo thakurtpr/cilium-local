@@ -1,0 +1,134 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumEnvoyConfig
+metadata:
+  name: wasm-http-filter
+  namespace: cilium-test
+spec:
+  # This configuration applies to services matching the selector
+  services:
+  - name: test-backend
+    namespace: cilium-test
+
+  # Envoy resources configuration
+  resources:
+  # HTTP Connection Manager with WASM filter
+  - "@type": type.googleapis.com/envoy.config.listener.v3.Listener
+    name: wasm_http_listener
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          codec_type: AUTO
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: backend_service
+              domains: ["*"]
+              routes:
+              # Explicit GET route - /health
+              - match:
+                  path: "/health"
+                  headers:
+                  - name: ":method"
+                    string_match:
+                      exact: "GET"
+                route:
+                  cluster: test-backend-cluster
+                  timeout: 30s
+              # Explicit POST route - /echo
+              - match:
+                  path: "/echo"
+                  headers:
+                  - name: ":method"
+                    string_match:
+                      exact: "POST"
+                route:
+                  cluster: test-backend-cluster
+                  timeout: 30s
+              # Catch-all route for testing other paths
+              - match:
+                  prefix: "/"
+                route:
+                  cluster: test-backend-cluster
+                  timeout: 30s
+
+          # HTTP filter chain - THIS IS WHERE THE WASM FILTER RUNS
+          http_filters:
+          # WASM filter - runs BEFORE routing to backend
+          - name: envoy.filters.http.wasm
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+              config:
+                name: oxy_money_auth_filter
+                # WASM module configuration
+                vm_config:
+                  vm_id: oxy_money_auth_vm
+                  runtime: envoy.wasm.runtime.v8
+                  code:
+                    remote:
+                      http_uri:
+                        # WASM filter loaded from Cloudinary
+                        uri: https://res.cloudinary.com/dohipaqvk/raw/upload/v1764100796/oxy_money_auth_filter_yos7rp.wasm
+                        timeout: 30s
+                        cluster: wasm_cluster
+                      sha256: ""
+                  allow_precompiled: true
+                # Optional: Configuration passed to the WASM filter
+                configuration:
+                  "@type": type.googleapis.com/google.protobuf.StringValue
+                  value: |
+                    {
+                      "environment": "local"
+                    }
+
+          # Router filter - MUST be last in the chain
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  # Cluster definition for the backend service
+  - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+    name: test-backend-cluster
+    connect_timeout: 5s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: test-backend-cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                # Backend service DNS name
+                address: test-backend.cilium-test.svc.cluster.local
+                port_value: 8080
+    # Enable HTTP/2 for better performance
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http_protocol_options: {}
+
+  # Cluster for fetching the WASM module
+  - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+    name: wasm_cluster
+    connect_timeout: 30s
+    type: LOGICAL_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: wasm_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: res.cloudinary.com
+                port_value: 443
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        sni: res.cloudinary.com

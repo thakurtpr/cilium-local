@@ -1,0 +1,80 @@
+# Cilium Helm values for local kind cluster with Envoy support
+# Install with: helm install cilium cilium/cilium --namespace kube-system -f cilium-values.yaml
+
+# Enable Envoy proxy support for L7 policy and visibility
+envoy:
+  enabled: true
+  # Enable Envoy DaemonSet
+  # This deploys Envoy as a DaemonSet for L7 traffic management
+  rollOutPods: true
+
+# Enable CiliumEnvoyConfig CRD for advanced Envoy configuration
+envoyConfig:
+  enabled: true
+
+# Enable L7 proxy (HTTP, Kafka, DNS) support
+l7Proxy: true
+
+# Enable socket-based load balancing
+socketLB:
+  enabled: true
+  hostNamespaceOnly: false
+
+# Enable BPF-based kube-proxy replacement
+kubeProxyReplacement: true
+
+# Cluster configuration for kind
+cluster:
+  name: kind
+  id: 0
+
+# Enable Hubble for observability (optional but useful for debugging)
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+
+# IP address management mode
+ipam:
+  mode: kubernetes
+
+# Tunnel mode (use vxlan for kind compatibility)
+tunnelProtocol: vxlan
+
+# Enable automatic node CIDR allocation
+autoDirectNodeRoutes: false
+
+# Enable endpoint routes
+endpointRoutes:
+  enabled: false
+
+# Disable host firewall (for simplicity in local testing)
+hostFirewall:
+  enabled: false
+
+# Enable policy enforcement
+policyEnforcementMode: default
+
+# Enable API rate limiting
+k8sServiceHost: ""
+k8sServicePort: ""
+
+# Operator configuration
+operator:
+  replicas: 1
+  prometheus:
+    enabled: true
+
+# Enable Prometheus metrics
+prometheus:
+  enabled: true
+
+# Enable debug mode for troubleshooting
+debug:
+  enabled: false
+  verbose: ""
+
+# Enable Cilium monitor aggregation
+monitorAggregation: medium

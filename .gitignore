@@ -1,0 +1,25 @@
+# Test artifacts
+*.log
+*.tmp
+
+# Helm charts
+charts/
+*.tgz
+
+# Kustomize generated files
+kustomization-generated.yaml
+
+# Local environment overrides
+local.yaml
+local-override.yaml
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

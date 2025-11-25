@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference the base configuration
+bases:
+- ../../base
+
+# Namespace for local environment
+namespace: cilium-test
+
+# Add local-specific labels
+commonLabels:
+  environment: local
+
+# ConfigMap generator for environment-specific overrides
+configMapGenerator:
+- name: test-environment-config
+  namespace: cilium-test
+  behavior: merge
+  literals:
+  - ENVIRONMENT=local
+  - WASM_FILTER_URL=https://res.cloudinary.com/dohipaqvk/raw/upload/v1764100796/oxy_money_auth_filter_yos7rp.wasm
+  - BACKEND_SERVICE_NAME=test-backend
+  - BACKEND_SERVICE_PORT=8080
+  - BACKEND_NAMESPACE=cilium-test
+
+# Patches for local environment
+patches:
+- target:
+    kind: Deployment
+    name: test-backend
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 2

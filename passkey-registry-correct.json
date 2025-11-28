@@ -1,0 +1,28 @@
+{
+  "clients": {
+    "dEuX2RiyzqEpsun7QiKtsx8Gpdxxn9yvCDfBPaE8Gud2IZ2x": {
+      "client_id": "BYTYBnuQqM6H4Haijasxkaxgkgig1pPuI7BwDnB8nXNA6YTy6",
+      "client_secret": "mNvtF1CZCuBnuQqM6H4HaihmNd3tW1pPuI7BwDnB8nXNA6YTaz38is8TZIXjxdwa",
+      "apiusername": "user1",
+      "key": "BFu1TTYRVr8TUNhlzKWsACTYSbk+2Z7j81dIfLmtL6f=",
+      "ips": ["0.0.0.0/0"],
+      "enabled": true
+    },
+    "test_api_key_456": {
+      "client_id": "client_002",
+      "client_secret": "secret_002",
+      "apiusername": "user2",
+      "key": "YW5vdGhlcnRlc3RrZXlmb3JlbmNyeXB0aW9uMTI=",
+      "ips": ["0.0.0.0/0"],
+      "enabled": true
+    },
+    "test_api_key_789": {
+      "client_id": "client_003",
+      "client_secret": "secret_003",
+      "apiusername": "admin_user",
+      "key": "YWRtaW5rZXlmb3JlbmNyeXB0aW9uMTIzNDU2Nzg5",
+      "ips": ["0.0.0.0/0"],
+      "enabled": true
+    }
+  }
+}

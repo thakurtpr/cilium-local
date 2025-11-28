@@ -1,0 +1,78 @@
+========================================
+DEPLOY EXISTING WASM (Manual Steps)
+========================================
+
+The WASM file with your pass-keys is ready at:
+d:\iSU\thakur_2.0\cilium-local\oxy_money_auth.wasm
+
+STEP 1: Copy WASM to server
+----------------------------
+scp d:\iSU\thakur_2.0\cilium-local\oxy_money_auth.wasm thakur@172.21.81.178:/tmp/
+
+STEP 2: SSH into server
+------------------------
+ssh thakur@172.21.81.178
+
+STEP 3: Deploy to Kind nodes
+-----------------------------
+cd /tmp
+
+# Copy to all nodes
+for node in cilium-demo-control-plane cilium-demo-worker cilium-demo-worker2; do
+    echo "→ $node"
+    docker exec $node mkdir -p /var/lib/cilium/wasm
+    docker cp oxy_money_auth.wasm $node:/var/lib/cilium/wasm/oxy_money_auth.wasm
+done
+
+# Restart Envoy
+kubectl delete pods -n kube-system -l k8s-app=cilium-envoy
+sleep 10
+kubectl wait --for=condition=ready pod -n kube-system -l k8s-app=cilium-envoy --timeout=90s
+
+STEP 4: Verify WASM loaded
+---------------------------
+kubectl logs -n kube-system -l k8s-app=cilium-envoy --tail=100 | grep "Auth filter configured"
+
+STEP 5: Copy JWT to server
+---------------------------
+# Exit SSH, then on Windows:
+scp d:\iSU\thakur_2.0\cilium-local\jwt_user2.txt thakur@172.21.81.178:/tmp/
+
+STEP 6: Test!
+-------------
+# SSH back in
+ssh thakur@172.21.81.178
+
+# Get Envoy IP
+ENVOY_IP=$(kubectl get pod -n kube-system -l k8s-app=cilium-envoy -o jsonpath='{.items[0].status.podIP}')
+echo "Envoy IP: $ENVOY_IP"
+
+# Test 1: Public endpoint
+kubectl exec test-client -- curl http://$ENVOY_IP:10000/health
+
+# Test 2: Protected (no auth) - should get 401
+kubectl exec test-client -- curl -I http://$ENVOY_IP:10000/api/protected
+
+# Test 3: With pass-key only - should get 401
+kubectl exec test-client -- curl -I -H "pass_key: test_api_key_456" http://$ENVOY_IP:10000/api/protected
+
+# Test 4: With pass-key + JWT - should get 200!
+JWT=$(cat /tmp/jwt_user2.txt)
+kubectl exec test-client -- curl -v \
+  -H "pass_key: test_api_key_456" \
+  -H "Authorization: Bearer $JWT" \
+  http://$ENVOY_IP:10000/api/protected
+
+# Check WASM logs
+kubectl logs -n kube-system -l k8s-app=cilium-envoy --tail=50 | grep -E "oxy_money|Validating"
+
+========================================
+NOTE: This WASM does NOT verify JWT signatures yet.
+It only validates:
+- Pass-key exists in registry ✅
+- JWT format is valid ✅  
+- JWT issuer/audience/expiration ✅
+- JWT signature ❌ (NOT verified - accepts any JWT)
+
+For production, we need to build with jsonwebtoken library.
+========================================

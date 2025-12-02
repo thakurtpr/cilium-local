@@ -17,6 +17,8 @@ STEP 3: Deploy to Kind nodes
 -----------------------------
 cd /tmp
 
+
+change
 # Copy to all nodes
 for node in cilium-demo-control-plane cilium-demo-worker cilium-demo-worker2; do
     echo "→ $node"

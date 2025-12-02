@@ -19,6 +19,9 @@ cd /tmp
 
 
 change
+
+
+change
 # Copy to all nodes
 for node in cilium-demo-control-plane cilium-demo-worker cilium-demo-worker2; do
     echo "→ $node"
